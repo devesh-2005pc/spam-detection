@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Spam Detection </title>
+    
+    {% if live_mode %}
+    <meta http-equiv="refresh" content="10">
+    {% endif %}
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- GSAP CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Particles.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            --dark-bg: #0a0a0a;
+            --card-bg: rgba(20, 20, 30, 0.9);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-primary: #ffffff;
+            --text-secondary: #b8b8ff;
+            --shadow-lg: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            --shadow-xl: 0 35px 60px -12px rgba(0, 0, 0, 0.8);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #000;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .animated-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+            animation: bgShift 20s ease-in-out infinite;
+        }
+
+        @keyframes bgShift {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(180deg); }
+        }
+
+        /* Compact 3D Container - No Scroll */
+        .main-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .glass-container {
+            width: 100%;
+            max-width: 500px; /* Reduced from 600px */
+            max-height: 95vh; /* Limit height */
+            height: fit-content;
+            padding: 28px; /* Reduced from 40px */
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px; /* Slightly smaller radius */
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-xl);
+            transform-style: preserve-3d;
+            transition: all 0.6s cubic-bezier(0.23, 1, 0.320, 1);
+            position: relative;
+            overflow: hidden; /* Prevent content overflow */
+            display: flex;
+            flex-direction: column;
+        }
+
+        .glass-container::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            right: -2px;
+            bottom: -2px;
+            background: var(--primary-gradient);
+            border-radius: 22px;
+            z-index: -1;
+            opacity: 0.3;
+            animation: borderPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes borderPulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.02); }
+        }
+
+        /* Compact Title */
+        .title-section {
+            text-align: center;
+            margin-bottom: 24px; /* Reduced from 40px */
+        }
+
+        .main-title {
+            font-size: clamp(1.8rem, 4vw, 2.8rem); /* Smaller title */
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 6px; /* Reduced */
+            letter-spacing: -0.02em;
+            transform: translateZ(40px);
+            line-height: 1.2;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem; /* Slightly smaller */
+            font-weight: 400;
+            margin: 0;
+        }
+
+        /* Compact Form */
+        .input-group {
+            position: relative;
+            margin-bottom: 18px; /* Reduced */
+        }
+
+        .floating-label {
+            position: absolute;
+            top: 9px; /* Adjusted for smaller textarea */
+            left: 18px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px; /* Reduced from 160px */
+            padding: 20px 18px 10px; /* Reduced padding */
+            border: 2px solid transparent;
+            border-radius: 14px; /* Smaller radius */
+            background: rgba(15, 15, 30, 0.8);
+            color: var(--text-primary);
+            font-size: 0.95rem; /* Slightly smaller font */
+            font-family: inherit;
+            resize: none; /* Fixed height, no resize */
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+            backdrop-filter: blur(10px);
+            line-height: 1.4;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            transform: translateY(-1px);
+        }
+
+        textarea:valid + .floating-label,
+        textarea:focus + .floating-label {
+            top: 6px;
+            font-size: 0.75rem;
+            color: #667eea;
+        }
+
+        /* Compact Buttons */
+        .btn {
+            padding: 14px 28px; /* Reduced padding */
+            border: none;
+            border-radius: 14px;
+            font-size: 0.95rem; /* Slightly smaller */
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.23, 1, 0.320, 1);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            box-shadow: var(--shadow-lg);
+            color: white;
+            width: 100%;
+            margin-bottom: 16px; /* Reduced */
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px) scale(1.01);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px; /* Reduced */
+            margin-bottom: 18px; /* Reduced */
+        }
+
+        .btn-secondary {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            color: var(--text-primary);
+            padding: 12px 20px; /* More compact */
+            font-size: 0.9rem;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(102, 126, 234, 0.2);
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+
+        /* Compact Email Display */
+     .email-box {
+    background: rgba(15, 15, 30, 0.8);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 14px;
+    margin: 12px 0;
+    backdrop-filter: blur(10px);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+
+       .email-box p {
+    margin: 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+
+        .email-box strong {
+            color: #667eea;
+            min-width: 70px;
+            font-size: 0.9rem;
+        }
+
+        /* Compact Result */
+        .result {
+            padding: 18px; /* Reduced */
+            border-radius: 16px;
+            text-align: center;
+            font-size: 1.3rem; /* Slightly smaller */
+            font-weight: 800;
+            margin-top: 12px; /* Reduced */
+            transform: translateZ(25px);
+            animation: resultPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            line-height: 1.2;
+        }
+
+        @keyframes resultPop {
+            0% { transform: scale(0.7) translateZ(0); opacity: 0; }
+            80% { transform: scale(1.05) translateZ(25px); }
+            100% { transform: scale(1) translateZ(25px); opacity: 1; }
+        }
+
+        .result.spam {
+            background: var(--danger-gradient);
+            box-shadow: var(--shadow-xl);
+            color: white;
+        }
+
+        .result.ham {
+            background: var(--success-gradient);
+            box-shadow: var(--shadow-xl);
+            color: white;
+        }
+
+        /* Particles Container */
+        #particles-js {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* Responsive - Mobile Optimized */
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 10px;
+                height: 100vh;
+            }
+            
+            .glass-container {
+                padding: 20px;
+                max-width: 95vw;
+                max-height: 90vh;
+                margin: 0 auto;
+            }
+            
+            .button-row {
+                grid-template-columns: 1fr;
+                gap: 10px;
+                margin-bottom: 14px;
+
+            }
+            
+            .main-title {
+                font-size: clamp(1.6rem, 6vw, 2.2rem);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .glass-container {
+                padding: 18px;
+            }
+            
+            textarea {
+                height: 100px;
+                padding: 28px 18px 10px;
+            }
+        }
+
+        /* Loading Animation - Smaller */
+        .loading {
+            width: 16px;
+            height: 16px;
+            border-width: 2px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Particles Background -->
+    <div id="particles-js"></div>
+    
+    <!-- Animated Background -->
+    <div class="animated-bg"></div>
+
+    <div class="main-container">
+        <div class="glass-container">
+            <div class="title-section">
+                <h1 class="main-title"> Spam Detector</h1>
+                <p class="subtitle">Advanced ML-powered analysis</p>
+            </div>
+
+            <form method="POST">
+                <div class="input-group">
+                    <textarea 
+                        name="text" 
+                        placeholder="Paste message for instant analysis..."
+                        required
+                        maxlength="1000"
+                    >{{ body if body else '' }}</textarea>
+                    <label class="floating-label">Message Content</label>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <span id="analyze-text">🔍 Analyze Message</span>
+                    <span id="loading-spinner" class="loading" style="display: none;"></span>
+                </button>
+            </form>
+
+            <div class="button-row">
+                <form action="/check-recent" method="GET" style="display: contents;">
+                    <button type="submit" class="btn btn-secondary">
+                        📊
+                        <span>Recent Email</span>
+                    </button>
+                </form>
+                <form action="/live" method="GET" style="display: contents;">
+                    <button type="submit" class="btn btn-secondary">
+                        🔴
+                        <span>Live Email</span>
+                    </button>
+                </form>
+            </div>
+
+            {% if subject %}
+            <div class="email-box">
+                <p><strong>📧 Subject:</strong> {{ subject[:60] }}{% if subject|length > 60 %}...{% endif %}</p>
+                <p><strong>💬 Message:</strong> {{ body[:100] }}{% if body|length > 100 %}...{% endif %}</p>
+            </div>
+            {% endif %}
+
+            {% if result %}
+            <div class="result {% if result == 'Spam' %}spam{% else %}ham{% endif %}">
+                {{ result }}
+                {% if result == 'Spam' %}
+                    🚨 DETECTED
+                {% else %}
+                    ✅ SAFE
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Optimized JavaScript -->
+    <script>
+        // 1. Optimized Particles.js (Fewer particles for performance)
+        particlesJS('particles-js', {
+            particles: {
+                number: { value: 50, density: { enable: true, value_area: 800 } },
+                color: { value: ['#667eea', '#764ba2', '#f093fb'] },
+                shape: { type: 'circle' },
+                opacity: { value: 0.4, random: true },
+                size: { value: 2.5, random: true },
+                line_linked: { enable: true, distance: 120, color: '#667eea', opacity: 0.15, width: 1 },
+                move: { enable: true, speed: 1.5 }
+            },
+            interactivity: {
+                events: { onhover: { enable: true, mode: 'grab' } },
+                modes: { grab: { distance: 150, line_linked: { opacity: 0.4 } } }
+            },
+            retina_detect: true
+        });
+
+        // 2. GSAP Animations - Optimized
+        gsap.from('.glass-container', {
+            duration: 1,
+            y: 80,
+            opacity: 0,
+            rotationY: 12,
+            ease: 'back.out(1.7)'
+        });
+
+        // Button hover effects
+        gsap.utils.toArray('.btn').forEach(btn => {
+            btn.addEventListener('mouseenter', () => gsap.to(btn, {scale: 1.03, y: -2, duration: 0.3}));
+            btn.addEventListener('mouseleave', () => gsap.to(btn, {scale: 1, y: 0, duration: 0.3}));
+        });
+
+        // Subtle floating
+        gsap.to('.glass-container', {
+            yoyo: true, repeat: -1, y: -6, duration: 3.5, ease: 'power1.inOut'
+        });
+
+        // Compact typing effect
+        const titleText = " Spam Detector";
+        let charIndex = 0;
+        const titleElement = document.querySelector('.main-title');
+        titleElement.innerHTML = '|';
+        
+        function typeWriter() {
+            if (charIndex < titleText.length) {
+                titleElement.innerHTML = titleText.slice(0, charIndex + 1) + '|';
+                charIndex++;
+                setTimeout(typeWriter, 80);
+            } else {
+                titleElement.innerHTML = titleText;
+            }
+        }
+        setTimeout(typeWriter, 300);
+
+        // 3. Compact interactions
+        const textarea = document.querySelector('textarea');
+        const analyzeBtn = document.querySelector('.btn-primary');
+        const analyzeText = document.getElementById('analyze-text');
+        const loadingSpinner = document.getElementById('loading-spinner');
+
+        textarea.addEventListener('input', function() {
+            const remaining = 1000 - this.value.length;
+            const label = this.parentElement.querySelector('.floating-label');
+            label.textContent = this.value ? `Message (${remaining} left)` : 'Message Content';
+        });
+
+        analyzeBtn.addEventListener('click', function() {
+            if (textarea.value.trim()) {
+                analyzeText.style.display = 'none';
+                loadingSpinner.style.display = 'inline-block';
+            }
+        });
+
+        // Smooth mouse parallax (reduced intensity)
+        document.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 6;
+            const y = (e.clientY / window.innerHeight - 0.5) * -6;
+            gsap.to('.glass-container', {rotateY: x, rotateX: y, duration: 0.8});
+        });
+
+        // Prevent scroll
+        document.body.style.overflow = 'hidden';
+        window.addEventListener('scroll', () => window.scrollTo(0, 0));
+    </script>
+
+    <!-- Google Fonts - Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+</body>
+</html>
