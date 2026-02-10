@@ -3,6 +3,7 @@ from pickle import load
 from reader import read_latest
 import threading
 import time
+import os
 
 app = Flask(__name__)
 
@@ -122,4 +123,5 @@ def home():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
